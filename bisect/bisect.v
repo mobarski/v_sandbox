@@ -1,11 +1,9 @@
 //module bisect
 import time
 
-// TODO float version
-// TODO string version
-
 // bisect - find insertion point to maintain sorted order
-fn bisect(a []int, val int) int {
+//          use first matching position
+fn bisect<T>(a []T, val T) int {
 	mut i := a.len / 2
 	mut delta := i
 	if a.len==0 { return 0 }
@@ -29,34 +27,10 @@ fn bisect(a []int, val int) int {
 	}
 }
 
-// bisect - find insertion point to maintain sorted order
-fn bisect_f64(a []f64, val f64) int {
-	mut i := a.len / 2
-	mut delta := i
-	if a.len==0 { return 0 }
-	// for iter in 0..50 {
-	for {
-		delta >>= 1
-		if delta==0 { delta=1 }
-		//println("val:$val  iter:$iter  i:$i  delta:$delta  len:$a.len")
-		if i+1 >= a.len { return a.len }
-		if val == a[i] { return i }
-		if val < a[i] {
-			if i==0 { return i }
-			i -= delta
-			continue
-		}
-		if val > a[i] {
-			if val < a[i+1] { return i+1 }
-			i += delta
-			continue
-		}
-	}
-}
 
 // bisect - find insertion point to maintain sorted order
 //          prefer positions to the left
-fn bisect_left(a []int, val int) int {
+fn bisect_left<T>(a []T, val T) int {
 	mut i := a.len / 2
 	mut delta := i
 	if a.len==0 { return 0 }
@@ -87,7 +61,7 @@ fn bisect_left(a []int, val int) int {
 
 // bisect - find insertion point to maintain sorted order
 //          prefer positions to the right
-fn bisect_right(a []int, val int) int {
+fn bisect_right<T>(a []T, val T) int {
 	mut i := a.len / 2
 	mut delta := i
 	if a.len==0 { return 0 }
@@ -122,7 +96,7 @@ fn bench(n int) {
 	}
 	sw := time.new_stopwatch({})
 	for i in 0..n*2 {
-		bisect(a,i)
+		bisect<int>(a,i)
 	}
 	dt := sw.elapsed().milliseconds()
 	println("elapsed: ${dt} ms  ${i64(f64(n*2)/dt*1000)} ops")

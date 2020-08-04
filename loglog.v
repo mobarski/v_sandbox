@@ -55,4 +55,3 @@ test_rank()
 mut data := []i8{len:16*3, init:-1}
 loglog_add(mut data, 16, 3, "test")
 println(data)
-

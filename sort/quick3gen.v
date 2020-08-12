@@ -68,5 +68,5 @@ for _ in 0..100 {
 	//println(b)
 	assert a==b
 }
-println("quicksort<T>: $total1 µ")
-println("array.sort:   $total2 µ")
+println("quicksort<T>: $total1 µs")
+println("array.sort:   $total2 µs")

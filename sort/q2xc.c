@@ -11492,7 +11492,8 @@ static void main__quicksort_int(array_int* tab, u64 left, u64 right) {
 		while (main__compare_int(_tab[i], pivot) < 0) {
 			i++;
 		}
-		while (main__compare_int(_tab[j], pivot) > 0) {
+		//while (main__compare_int(_tab[j], pivot) > 0) {
+		while (main__compare_int(pivot, _tab[j]) < 0) {
 			j--;
 		}
 		if (i <= j) {

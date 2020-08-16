@@ -6,7 +6,6 @@ fn compare<T>(a T, b T) int {
 	if a < b { return -1 }
 	if a > b { return 1 }
 	return 0
-	//return int(b-a)
 }
 
 fn quicksort<T>(mut tab []T, left u64, right u64) {

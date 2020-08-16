@@ -38,5 +38,7 @@ for _ in 0..100 {
 	total2 += sw2.elapsed().microseconds()
 	assert a==b
 }
-println(total1)
-println(total2)
+println("quicksort<T>: ${total1:8} µs")
+println("array.sort:   ${total2:8} µs")
+println("quicksort<T>/array.sort: ${f64(total1)/f64(total2)}")
+

@@ -1,6 +1,13 @@
 import rand
 import time
 
+[inline]
+fn compare<T>(a T, b T) int {
+	if a < b { return -1 }
+	if a > b { return 1 }
+	return 0
+}
+
 fn mergesort<T>(mut tab []T, left int, right int) {
 	if left < right {
 		mid := left + (right-1)>>1
@@ -14,7 +21,7 @@ fn merge<T>(mut tab []T, left int, mid int, right int) {
 
 	// handle of the simplest case
 	if right-left == 1 {
-		if tab[right] < tab[left] { // cmp
+		if compare<int>(tab[left],tab[right]) > 0 { // cmp
 			tab[left],tab[right] = tab[right],tab[left]
 		}
 		return
@@ -35,7 +42,7 @@ fn merge<T>(mut tab []T, left int, mid int, right int) {
 	mut j := 0
 	mut k := left
 	for i<left_tab.len && j<right_tab.len {
-		if left_tab[i] <= right_tab[j] { // cmp
+		if compare<int>(left_tab[i],right_tab[j]) <= 0 { // cmp
 			tab[k] = left_tab[i]
 			i++
 		} else {

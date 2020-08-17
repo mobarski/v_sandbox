@@ -1,0 +1,17 @@
+mergecmp_para_int_direct.c (Windows10 clang-10 -prod @ Xeon Gold 6254)
+max_depth | threads | t/t_qsort
+0 | 1 | 1.13
+1 | 2 | 0.62
+2 | 4 | 0.35
+3 | 8 | 0.23
+4 | 16 | 0.21
+5 | 32 | 0.21
+
+mergecmp_para_int.v (Windows10 clang-10 -prod @ Xeon Gold 6254)
+max_depth | threads | t/t_qsort
+0 | 1 | 1.67
+1 | 2 | 0.93
+2 | 4 | 0.52
+3 | 8 | 0.33
+4 | 16 | 0.26
+5 | 32 | 0.25

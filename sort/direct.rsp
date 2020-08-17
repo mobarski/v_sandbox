@@ -1,0 +1,1 @@
+ -std=gnu11 -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -Wno-unused-result -Wno-unused-function -Wno-missing-braces -Wno-unused-label -O3 -fno-strict-aliasing -flto -Werror=implicit-function-declaration -o "mergecmp_para_int_direct.exe" "mergecmp_para_int_direct.c" -municode  -ldbghelp -I "C:\\apps\\nv1\\thirdparty\\stdatomic\\win" -lws2_32  

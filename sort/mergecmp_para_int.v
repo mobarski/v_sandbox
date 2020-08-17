@@ -15,7 +15,7 @@ fn compare(a int, b int) int {
 fn mergesort2(mut tab []int, left int, right int) {
 	mut wg := sync.new_waitgroup()
 	wg.add(1)
-	mergesort_para(mut tab, left, right, 0, 3, mut wg)
+	mergesort_para(mut tab, left, right, 0, 3, mut wg)  // NUMBER_OF_THREADS = 1<<max_depth
 	wg.wait()
 }
 
@@ -105,10 +105,10 @@ fn merge(mut tab []int, left int, mid int, right int) {
 
 mut total1 := i64(0)
 mut total2 := i64(0)
-for _ in 0..10 {
+for _ in 0..1 {
 	mut a := []int{}
-	for _ in 0..1_000_000 {
-		a << rand.intn(1_000_000)
+	for _ in 0..100_000_000 {
+		a << rand.intn(100_000_000)
 	}
 	mut b := a.clone()
 	sw1 := time.new_stopwatch({})

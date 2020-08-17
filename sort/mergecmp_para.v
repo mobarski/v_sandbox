@@ -2,24 +2,29 @@ import rand
 import time
 import sync
 
+
 [inline]
 fn compare<T>(a T, b T) int {
 	if a < b { return -1 }
-	if a > b { return 1 }
+	if a > b { return  1 }
 	return 0
 }
 
-fn mergesort2<T>(mut tab []T) {
+
+// parallel mergesort
+fn mergesort2<T>(mut tab []T, left int, right int) {
 	mut wg := sync.new_waitgroup()
 	wg.add(1)
-	mergesort_para<T>(mut tab, 0, 3, tab.len+1, 0, mut wg)
+	mergesort_para<T>(mut tab, left, right, 0, 3, mut wg)
 	wg.wait()
 }
 
+
+// parallel mergesort internal function
 fn mergesort_para<T>(mut tab []T, left int, right int, depth int, max_depth int, mut wg_parent sync.WaitGroup) {
 	if left < right {
 		mid := left + (right-1)>>1
-		if depth < max_depth { // TODO
+		if depth < max_depth {
 			mut wg := sync.new_waitgroup()
 			wg.add(2)
 			go mergesort_para<T>(mut tab, left,  mid,   depth+1, max_depth, mut wg)
@@ -34,6 +39,7 @@ fn mergesort_para<T>(mut tab []T, left int, right int, depth int, max_depth int,
 	wg_parent.done()
 }
 
+
 fn mergesort<T>(mut tab []T, left int, right int) {
 	if left < right {
 		mid := left + (right-1)>>1
@@ -43,6 +49,8 @@ fn mergesort<T>(mut tab []T, left int, right int) {
 	}
 }
 
+
+// merge two sorted lists stored in one array
 fn merge<T>(mut tab []T, left int, mid int, right int) {
 
 	// handle of the simplest case
@@ -104,7 +112,7 @@ for _ in 0..100 {
 	}
 	mut b := a.clone()
 	sw1 := time.new_stopwatch({})
-	mergesort2<int>(mut a)
+	mergesort2<int>(mut a, 0, a.len+1)
 	total1 += sw1.elapsed().microseconds()
 	sw2 := time.new_stopwatch({})
 	b.sort()

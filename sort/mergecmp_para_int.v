@@ -4,7 +4,7 @@ import sync
 
 
 [inline]
-fn compare<T>(a T, b T) int {
+fn compare(a int, b int) int {
 	if a < b { return -1 }
 	if a > b { return  1 }
 	return 0
@@ -12,58 +12,58 @@ fn compare<T>(a T, b T) int {
 
 
 // parallel mergesort
-fn mergesort2<T>(mut tab []T, left int, right int) {
+fn mergesort2(mut tab []int, left int, right int) {
 	mut wg := sync.new_waitgroup()
 	wg.add(1)
-	mergesort_para<T>(mut tab, left, right, 0, 3, mut wg)
+	mergesort_para(mut tab, left, right, 0, 3, mut wg)
 	wg.wait()
 }
 
 
 // parallel mergesort internal function
-fn mergesort_para<T>(mut tab []T, left int, right int, depth int, max_depth int, mut wg_parent sync.WaitGroup) {
+fn mergesort_para(mut tab []int, left int, right int, depth int, max_depth int, mut wg_parent sync.WaitGroup) {
 	if left < right {
 		mid := left + (right-1)>>1
 		if depth < max_depth {
 			mut wg := sync.new_waitgroup()
 			wg.add(2)
-			go mergesort_para<T>(mut tab, left,  mid,   depth+1, max_depth, mut wg)
-			go mergesort_para<T>(mut tab, mid+1, right, depth+1, max_depth, mut wg)
+			go mergesort_para(mut tab, left,  mid,   depth+1, max_depth, mut wg)
+			go mergesort_para(mut tab, mid+1, right, depth+1, max_depth, mut wg)
 			wg.wait()
 		} else {
-			mergesort<T>(mut tab, left,  mid)
-			mergesort<T>(mut tab, mid+1, right)
+			mergesort(mut tab, left,  mid)
+			mergesort(mut tab, mid+1, right)
 		}
-		merge<T>(mut tab, left, mid, right)
+		merge(mut tab, left, mid, right)
 	}
 	wg_parent.done()
 }
 
 
-fn mergesort<T>(mut tab []T, left int, right int) {
+fn mergesort(mut tab []int, left int, right int) {
 	if left < right {
 		mid := left + (right-1)>>1
-		mergesort<T>(mut tab, left, mid)
-		mergesort<T>(mut tab, mid+1, right)
-		merge<T>(mut tab, left, mid, right)
+		mergesort(mut tab, left, mid)
+		mergesort(mut tab, mid+1, right)
+		merge(mut tab, left, mid, right)
 	}
 }
 
 
 // merge two sorted lists stored in one array
-fn merge<T>(mut tab []T, left int, mid int, right int) {
+fn merge(mut tab []int, left int, mid int, right int) {
 
 	// handle of the simplest case
 	if right-left == 1 {
-		if compare<int>(tab[left],tab[right]) > 0 { // cmp
+		if compare(tab[left],tab[right]) > 0 { // cmp
 			tab[left],tab[right] = tab[right],tab[left]
 		}
 		return
 	}
 
 	// clone arrays
-	mut left_tab := []T{len:mid-left+1}
-	mut right_tab := []T{len:right-mid}
+	mut left_tab := []int{len:mid-left+1}
+	mut right_tab := []int{len:right-mid}
 	for i in 0..mid-left+1 {
 		left_tab[i] = tab[left+i]
 	}
@@ -76,7 +76,7 @@ fn merge<T>(mut tab []T, left int, mid int, right int) {
 	mut j := 0
 	mut k := left
 	for i<left_tab.len && j<right_tab.len {
-		if compare<int>(left_tab[i],right_tab[j]) <= 0 { // cmp
+		if compare(left_tab[i],right_tab[j]) <= 0 { // cmp
 			tab[k] = left_tab[i]
 			i++
 		} else {
@@ -112,7 +112,7 @@ for _ in 0..100 {
 	}
 	mut b := a.clone()
 	sw1 := time.new_stopwatch({})
-	mergesort2<int>(mut a, 0, a.len-1)
+	mergesort2(mut a, 0, a.len-1)
 	total1 += sw1.elapsed().microseconds()
 	sw2 := time.new_stopwatch({})
 	b.sort()
@@ -121,6 +121,6 @@ for _ in 0..100 {
 	//println(b)
 	assert a==b
 }
-println("mergesort2<T>: ${total1:8} µs")
-println("   array.sort: ${total2:8} µs")
-println("mergesort2<T>/array.sort: ${f64(total1)/f64(total2)}")
+println("mergesort2: ${total1:8} µs")
+println("array.sort: ${total2:8} µs")
+println("mergesort2/array.sort: ${f64(total1)/f64(total2)}")

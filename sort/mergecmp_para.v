@@ -105,10 +105,10 @@ fn merge<T>(mut tab []T, left int, mid int, right int) {
 
 mut total1 := i64(0)
 mut total2 := i64(0)
-for _ in 0..100 {
+for _ in 0..10 {
 	mut a := []int{}
-	for _ in 0..100000 {
-		a << rand.intn(100000)
+	for _ in 0..1_000_000 {
+		a << rand.intn(1_000_000)
 	}
 	mut b := a.clone()
 	sw1 := time.new_stopwatch({})

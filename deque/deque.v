@@ -67,6 +67,14 @@ fn (mut d Deque) shift() int {
 	return d.data[mod(d.head, d.cap)]
 }
 
+fn (mut d Deque) first() int {
+	return d.data[mod(d.head+1, d.cap)]
+}
+
+fn (mut d Deque) last() int {
+	return d.data[mod(d.tail-1, d.cap)]
+}
+
 [direct_array_access]
 fn (mut d Deque) grow() {
 	old_cap := d.cap
@@ -118,3 +126,5 @@ println(d.data)
 d.prepend(-1)
 d.prepend(-2)
 println(d.data)
+println(d.first())
+println(d.last())

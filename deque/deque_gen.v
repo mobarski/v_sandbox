@@ -17,19 +17,19 @@
 */
 
 
-struct Deque {
+struct Deque<T> {
 mut:
 	cap  int
 	len  int
 	head int
 	tail int
-	data []int
+	data []T
 }
 
 
-fn new_deque(cap int) Deque {
-	mut d := Deque{cap:cap}
-	d.data = []int{len:cap}
+fn new_deque<T>(cap int) &Deque<T> {
+	mut d := &Deque<T>{cap:cap}
+	d.data = []T{len:cap}
 	d.head = -1
 	d.tail = 0
 	d.len  = 0
@@ -38,7 +38,7 @@ fn new_deque(cap int) Deque {
 }
 
 
-fn (mut d Deque) push(val int) {
+fn (mut d Deque<T>) push(val T) {
 	if d.len == d.cap {
 		d.grow()
 	}
@@ -48,7 +48,7 @@ fn (mut d Deque) push(val int) {
 }
 
 
-fn (mut d Deque) prepend(val int) {
+fn (mut d Deque<T>) prepend(val T) {
 	if d.len == d.cap {
 		d.grow()
 	}
@@ -59,7 +59,7 @@ fn (mut d Deque) prepend(val int) {
 
 
 [direct_array_access]
-fn (mut d Deque) push_many(vals []int) {
+fn (mut d Deque<T>) push_many(vals []T) {
 	if d.len + vals.len >= d.cap {
 		d.grow()
 	}
@@ -68,7 +68,7 @@ fn (mut d Deque) push_many(vals []int) {
 
 
 [direct_array_access]
-fn (mut d Deque) prepend_many(vals []int) {
+fn (mut d Deque<T>) prepend_many(vals []T) {
 	if d.len + vals.len >= d.cap {
 		d.grow()
 	}
@@ -76,7 +76,7 @@ fn (mut d Deque) prepend_many(vals []int) {
 }
 
 
-fn (mut d Deque) pop() int {
+fn (mut d Deque<T>) pop() T {
 	if d.len <= 0 {
 		panic('.pop() from an empty Deque')
 	}
@@ -86,7 +86,7 @@ fn (mut d Deque) pop() int {
 }
 
 
-fn (mut d Deque) shift() int {
+fn (mut d Deque<T>) shift() T {
 	if d.len <= 0 {
 		panic('.shift() from an empty Deque')
 	}
@@ -96,7 +96,7 @@ fn (mut d Deque) shift() int {
 }
 
 
-fn (d Deque) peek(pos int) int {
+fn (d Deque<T>) peek(pos int) T {
 	if pos >= d.len || pos < -d.len {
 		panic('.peek() out of bounds')
 		
@@ -109,10 +109,11 @@ fn (d Deque) peek(pos int) int {
 	}
 }
 
+
 [direct_array_access]
-fn (mut d Deque) grow() {
+fn (mut d Deque<T>) grow() {
 	old_cap := d.cap
-	d.data << [0].repeat(d.cap) // TODO optimize
+	d.data << [T(0)].repeat(d.cap) // TODO optimize
 	d.cap = d.data.len
 	for i in 0..d.len {
 		d.tail--
@@ -123,7 +124,7 @@ fn (mut d Deque) grow() {
 }
 
 
-fn (mut d Deque) shrink() {
+fn (mut d Deque<T>) shrink() {
 	panic('TODO: ${@STRUCT}.${@FN}') // TODO
 }
 
@@ -142,7 +143,7 @@ fn mod(a int, b int) int {
 // ---[ TEST ]------------------------------------------------------------------
 
 
-mut d := new_deque(3)
+mut d := new_deque<int>(6)
 
 // test_push_and_grow
 d.push(1)

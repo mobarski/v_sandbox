@@ -5,11 +5,13 @@ struct LineReader {
 	buf  charptr
 }
 
-fn new_linereader(filename string, buf_len int) &LineReader {
+fn new_linereader(filename string, buf_len int) ?&LineReader {
+	fp := C.fopen(charptr(filename.str), 'r')
+	if fp==0 { return error('cannot open file: $filename') }
 	r := &LineReader{
 		filename: filename
 		buf_len: buf_len
-		file: C.fopen(charptr(filename.str), 'r')
+		file: fp
 		buf: charptr([]byte{cap:buf_len}.data) // is this safe?
 	}
 	return r
@@ -22,7 +24,7 @@ fn (r LineReader) readline() ?string {
 
 // ---[ EXAMPLE ]---------------------------------------------------------------
 
-f := new_linereader("reader.v", 1000)
+f := new_linereader("reader.v", 1000) or { panic(err) }
 for {
 	line := f.readline() or { break }
 	print("> $line")

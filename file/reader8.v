@@ -58,7 +58,6 @@ fn (mut r Reader) read_line() ? (string,bool) {
 	unsafe {
 		if r.do_read {
 			if r.is_end { return none } // it's faster when it's here vs before if r.do_read
-			//r.n_read = C.fread(r.buf+r.carry, 1, r.buf_len-r.carry, r.cfile) + r.carry
 			r.n_read = r.file.read_bytes_into(r.buf[r.carry..], r.buf.len-r.carry) + r.carry
 			//println('BUF ${r.carry} ${r.n_read} ${r.buf}')
 			r.do_read = false
@@ -133,7 +132,7 @@ filename := "usunmnie.txt"
 
 f := os.open(filename)?
 mut r := new_reader(f)
-r.set_buffer(10,10)
+r.set_buffer(100_000,100_000)
 mut lines := 0
 for {
 	r.read_line() or { break }

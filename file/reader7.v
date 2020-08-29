@@ -1,6 +1,10 @@
 import time
 import os
 
+const (
+	default_buf_len = 1024
+)
+
 fn C.memchr(charptr, int, size_t) charptr
 
 struct Reader {
@@ -9,79 +13,85 @@ mut:
 	buf       byteptr
 	buf_len   int
 	buf_max   int
-	offset    int
-	carry     int
-	n_read    int
-	is_end    bool
-	do_read   bool
-	is_prefix bool
+	offset    int  // start of line offset
+	carry     int  // number of bytes to carry between file reads
+	n_read    int  // number of bytes read in the last file read op
+	is_end    bool // end of file reached
+	do_read   bool // file read operation should be perfomed on next call
 }
-
-// TODO filename -> file   cfile -> file
-fn new_reader(filename string, buf_len int, buf_max int) &Reader {
+// */
+fn new_reader(cfile voidptr) &Reader {
+	buf_len := default_buf_len
+	buf := malloc(buf_len)
 	r := &Reader{
-		cfile:     C.fopen(charptr(filename.str), 'r')
-		buf:       malloc(buf_len)
+		cfile:     cfile
+		buf:       buf
 		buf_len:   buf_len
-		buf_max:   buf_max
+		buf_max:   0
 		offset:    0
 		carry:     0
 		n_read:    0
 		is_end:    false
 		do_read:   true
-		is_prefix: false
 	}
 	return r
 }
 
 fn (mut r Reader) close() {
 	C.fclose(r.cfile)
+	free(r.buf)
 }
 
-// TODO wrap C.fread
-// TODO generic version -> working on a buffer, delim  -> read_until(delim)
-// TODO specific version -> working on a file
+fn (mut r Reader) set_buffer(buf_len int, buf_max int) {
+	assert buf_len >= 2
+	assert buf_len <= buf_max || buf_max==0
+	r.buf = v_realloc(r.buf, u32(buf_len))
+	r.buf_len = buf_len
+	r.buf_max = buf_max
+}
 
-// TODO is_prefix -> move from struct to out
+// TODO take generic delim, not only `\n`
 // TODO \r removal
-//[direct_array_access]
-fn (mut r Reader) read_line() ?string {
+// TODO wrap C.fread -> os.File.read_into(byteptr, cnt) ???
+
+// read_line
+fn (mut r Reader) read_line() ?(string,bool) {
 	unsafe {
 		if r.do_read {
-			if r.is_end { return none }
+			if r.is_end { return none } // it's faster when it's here vs before if r.do_read
 			r.n_read = C.fread(r.buf+r.carry, 1, r.buf_len-r.carry, r.cfile) + r.carry
 			r.do_read = false
-			r.is_prefix = false
 			if r.n_read == 0 { return none }
 		}
 		
 		// scan
 		start := r.buf + r.offset
 		loc := C.memchr(start,`\n`,r.n_read-r.offset)
+		
 		// found
 		if loc!=0 {
 			len := int(u64(loc) - u64(start))
 			r.offset += len+1
-			return tos(start, len)
-		}
-		// not found
-		len := r.n_read - r.offset
-		if r.n_read < r.buf_len-r.carry {
-			// last line
-			r.is_end = true
-			r.do_read = true
-			return tos(start, len)
+			return tos(start, len),false
 		}
 		
-		//
+		len := r.n_read - r.offset
+		
+		// not found, last line
+		if r.n_read < r.buf_len-r.carry {
+			r.is_end = true
+			r.do_read = true
+			return tos(start, len),false // TODO check golang 
+		}
+		
+		// not found, grow (long line)
 		if r.offset == 0 {
 			
 			// grow limit reached -> is_prefix
 			if r.buf_max != 0 && r.buf_len >= r.buf_max {
-				r.is_prefix = true
 				r.carry = 0
 				r.do_read = true
-				return tos(r.buf, len)
+				return tos(r.buf, len),true
 			}
 			
 			// grow
@@ -94,24 +104,22 @@ fn (mut r Reader) read_line() ?string {
 			} 
 			//println('growing $new_size')
 			r.buf_len = new_size
-			r.buf = C.realloc(r.buf, r.buf_len)
-			
-		} else {
+			r.buf = v_realloc(r.buf, u32(r.buf_len))
 		
-			// carry
+		// not found, carry
+		} else {
 			C.memcpy(r.buf, r.buf+r.offset, r.n_read-r.offset)
 			r.carry = r.n_read - r.offset
-		
 		}
 		
+		// continue scanning
 		r.offset = 0
 		r.do_read = true
-		line := r.read_line() or { return none }
-		return line
+		return r.read_line()?
 	}
 }
 
-// -------------
+// ---[ TEST / BENCH ]----------------------------------------------------------
 
 sw := time.new_stopwatch({})
 
@@ -119,7 +127,9 @@ sw := time.new_stopwatch({})
 //filename := "C:\\repo\\orwell_new\\sample_50v2.tsv"
 filename := "usunmnie.txt"
 
-mut r := new_reader(filename, 100_000, 0)
+f := os.vfopen(filename,'r')?
+mut r := new_reader(f)
+r.set_buffer(100_000,0)
 mut lines := 0
 for {
 	r.read_line() or { break }
@@ -143,7 +153,8 @@ println('lines: $lines')
 import os
 import io
 
-f := os.open_file('example.txt','r')
+//f := os.open('example.txt')?
+f := os.vfopen('example.txt','r')?
 mut r := io.new_reader(f, 1000, 0)
 
 for {
@@ -152,3 +163,4 @@ for {
 }
 
 */
+

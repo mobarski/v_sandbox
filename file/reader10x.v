@@ -49,12 +49,18 @@ fn (mut r Reader) close() {
 	// TODO free the buffer ?
 }
 
-// NOTICE abstracting read_line into read_string(delim) and calling that in
-//        read_line + stripping \r reduces the performance by 2 times
-
-// read_line
+// TODO take generic delim, not only `\n`
 [direct_array_access]
 fn (mut r Reader) read_line() ? (string,bool) {
+	line,is_prefix := r.read_string(`\n`) ?
+	if line.len>0 && line[line.len-1]==`\r` { return line[..line.len-1],is_prefix }
+	return line,is_prefix
+}
+
+// read_string
+[direct_array_access]
+[inline]
+fn (mut r Reader) read_string(delim byte) ? (string,bool) {
 	unsafe {
 		
 		// read file into buffer (when necessary)
@@ -68,13 +74,12 @@ fn (mut r Reader) read_line() ? (string,bool) {
 		
 		// scan buffer
 		start := r.offset
-		idx := r.buf[start..r.n_read].index(`\n`)
+		idx := r.buf[start..r.n_read].index(delim)
 				
 		// found
 		if idx>=0 {
 			mut len := idx
 			r.offset += len+1
-			if idx>0 && r.buf[start+len-1]==`\r` { len-- }
 			return tos(&r.buf[start], len),false
 		}
 		
@@ -84,7 +89,6 @@ fn (mut r Reader) read_line() ? (string,bool) {
 		if r.n_read < r.buf.len {
 			r.is_end = true
 			r.do_read = true // required for r.is_end to be checked
-			if len>1 && r.buf[start+len-1]==`\r` { len-- }
 			return tos(&r.buf[start], len),false // TODO check golang 
 		}
 		
@@ -95,7 +99,6 @@ fn (mut r Reader) read_line() ? (string,bool) {
 			if r.buf_max != 0 && r.buf.len >= r.buf_max {
 				r.carry = 0
 				r.do_read = true
-				if len>1 && r.buf[start+len-1]==`\r` { len-- }
 				return tos(&r.buf[0], len),true
 			}
 			
@@ -121,7 +124,7 @@ fn (mut r Reader) read_line() ? (string,bool) {
 		// continue scanning
 		r.offset = 0
 		r.do_read = true
-		return r.read_line() ?
+		return r.read_string(delim) ?
 	}
 }
 
@@ -141,6 +144,7 @@ fn (mut r Reader) read_line() ? (string,bool) {
 	//mut fo := os.create("output.txt") ?
 	sw := time.new_stopwatch({})
 	for {
+		//line,is_prefix = r.read_string(`\n`) or { break }
 		line,is_prefix = r.read_line() or { break }
 		//fo.writeln(line)
 		lines++

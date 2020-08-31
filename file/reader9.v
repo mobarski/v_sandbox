@@ -2,9 +2,8 @@ import time
 import os
 
 const (
-	// value optimized for fast reading of big(ish) files
-	default_buf_len = 128*1024
-	default_buf_max = 0
+	default_buf_len = 128*1024 // large for fast reading of big(ish) files
+	default_buf_max = 0        // 0 -> no limit
 )
 
 struct Reader {
@@ -19,11 +18,23 @@ mut:
 	do_read   bool // file read operation should be perfomed on next call
 }
 // */
-fn new_reader(file os.File) &Reader {
+fn new_reader(file os.File, args ...int) &Reader {
+	// handle buffer size args
+	mut buf_len := default_buf_len
+	mut buf_max := default_buf_max
+	if args.len>0 { // buf_len
+		buf_len = args[0]
+	}
+	if args.len>1 { // buf_max
+		buf_max = args[1]
+	}
+	assert buf_len >= 2
+	assert buf_len <= buf_max || buf_max==0	
+	// create
 	r := &Reader{
 		file:      file
-		buf:       []byte{}
-		buf_max:   0
+		buf:       []byte{len:buf_len, cap:buf_len}
+		buf_max:   buf_max
 		offset:    0
 		carry:     0
 		n_read:    0
@@ -38,16 +49,7 @@ fn (mut r Reader) close() {
 	// TODO free the buffer ?
 }
 
-fn (mut r Reader) set_buffer(buf_len int, buf_max int) {
-	assert buf_len >= 2
-	assert buf_len >= r.buf.len
-	assert buf_len <= buf_max || buf_max==0
-	r.buf << [byte(0)].repeat(buf_len-r.buf.len)
-	r.buf_max = buf_max
-}
-
 // TODO take generic delim, not only `\n`
-// TODO \r removal
 
 // read_line
 [direct_array_access]
@@ -56,10 +58,7 @@ fn (mut r Reader) read_line() ? (string,bool) {
 		
 		// read file into buffer (when necessary)
 		if r.do_read {
-			if r.is_end { return none } // it's faster when it's here vs before if r.do_read
-			if r.buf.len == 0 { // doing it here allows call to .set_buffer to be optional
-				r.set_buffer(default_buf_len, default_buf_max)
-			} 
+			if r.is_end { return none } // it's faster when it's here vs before if r.do_read			
 			r.n_read = r.file.read_bytes_into(r.buf[r.carry..], r.buf.len-r.carry) + r.carry // TODO rename r.n_read
 			//eprintln('BUF ${r.carry} ${r.n_read} ${r.buf}')
 			r.do_read = false
@@ -67,32 +66,35 @@ fn (mut r Reader) read_line() ? (string,bool) {
 		}
 		
 		// scan buffer
-		idx := r.buf[r.offset..r.n_read].index(`\n`)
+		start := r.offset
+		idx := r.buf[start..r.n_read].index(`\n`)
 				
 		// found
 		if idx>=0 {
 			mut len := idx
-			start := r.offset
 			r.offset += len+1
+			if idx>0 && r.buf[start+len-1]==`\r` { len-- }
 			return tos(&r.buf[start], len),false
 		}
 		
-		len := r.n_read - r.offset
+		mut len := r.n_read - start
 		
 		// not found, last line
-		if r.n_read < r.buf.len-r.carry {
+		if r.n_read < r.buf.len {
 			r.is_end = true
-			r.do_read = true
-			return tos(&r.buf[r.offset], len),false // TODO check golang 
+			r.do_read = true // required for r.is_end to be checked
+			if len>1 && r.buf[start+len-1]==`\r` { len-- }
+			return tos(&r.buf[start], len),false // TODO check golang 
 		}
 		
 		// not found (and line is longer than the buffer)
-		if r.offset == 0 {
+		if start == 0 {
 			
 			// buffer size limit reached
 			if r.buf_max != 0 && r.buf.len >= r.buf_max {
 				r.carry = 0
 				r.do_read = true
+				if len>1 && r.buf[start+len-1]==`\r` { len-- }
 				return tos(&r.buf[0], len),true
 			}
 			
@@ -109,9 +111,9 @@ fn (mut r Reader) read_line() ? (string,bool) {
 		
 		// not found, carry start of the line to the buffer's head
 		} else {
-			r.carry = r.n_read - r.offset
+			r.carry = r.n_read - start
 			for i in 0..r.carry {
-				r.buf[i] = r.buf[r.offset+i]
+				r.buf[i] = r.buf[start+i]
 			}
 		}
 		
@@ -124,33 +126,36 @@ fn (mut r Reader) read_line() ? (string,bool) {
 
 // ---[ TEST / BENCH ]----------------------------------------------------------
 
-sw := time.new_stopwatch({})
+{
+	//filename := "test.txt"
+	//filename := "C:\\repo\\orwell_new\\sample_50v2.tsv"
+	filename := "usunmnie.txt"
 
-//filename := "test.txt"
-//filename := "C:\\repo\\orwell_new\\sample_50v2.tsv"
-filename := "usunmnie.txt"
+	f := os.open(filename) ?
+	mut lines := 0
+	mut line := ''
+	mut is_prefix := false
 
-f := os.open(filename) ?
-mut r := new_reader(f)
-r.set_buffer(128*1024,0)
-mut lines := 0
-for {
-	r.read_line() or { break }
-	//line,_ := r.read_line() or { break } 
-	//println('>>$line<<')
-	lines++
-	//println(lines)
+	mut r := new_reader(f)
+	//mut fo := os.create("output.txt") ?
+	sw := time.new_stopwatch({})
+	for {
+		line,is_prefix = r.read_line() or { break }
+		//fo.writeln(line)
+		lines++
+		//println('$lines > "$line" $is_prefix')
+	}
+	elapsed := sw.elapsed().seconds()
+	//fo.close()
+
+	size := os.file_size(filename)
+	size_mb := f64(size)/1_000_000
+	rate_mbps := size_mb/elapsed
+	println('filesize [MB]: $size_mb')
+	println('elapsed [s]:   $elapsed')
+	println('rate [MB/s]:   $rate_mbps')
+	println('lines: $lines')
 }
-
-size := os.file_size(filename)
-size_mb := f64(size)/1_000_000
-elapsed := sw.elapsed().seconds()
-rate_mbps := size_mb/elapsed
-println('filesize [MB]: $size_mb')
-println('elapsed [s]:   $elapsed')
-println('rate [MB/s]:   $rate_mbps')
-println('lines: $lines')
-
 
 /*
 

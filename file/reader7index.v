@@ -132,7 +132,7 @@ filename := "usunmnie.txt"
 
 f := os.vfopen(filename,'r')?
 mut r := new_reader(f)
-r.set_buffer(100_000,0)
+r.set_buffer(128_000,0)
 mut lines := 0
 for {
 	r.read_line() or { break }
